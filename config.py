@@ -17,6 +17,9 @@ PICAMERA2_AE_ENABLE = True
 PICAMERA2_AWB_ENABLE = True
 PICAMERA2_SATURATION = 1.1
 PICAMERA2_CONTRAST = 1.0
+# Only allow grayscale frames when scene brightness is almost pitch dark.
+# OpenCV grayscale brightness scale is 0..255.
+GRAYSCALE_DARK_THRESHOLD = 6.0
 
 # If the lens is to the RIGHT of the robot centerline (forward view), rocks on the
 # centerline appear LEFT of the image center. Use a NEGATIVE offset (pixels) to move

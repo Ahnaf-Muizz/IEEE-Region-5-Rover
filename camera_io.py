@@ -80,6 +80,17 @@ def read_bgr():
         frame = _picam2.capture_array()
         if frame is None:
             return None
+        if frame.ndim == 3 and frame.shape[2] == 3:
+            # In low light, some pipelines can return effectively monochrome RGB frames
+            # even when format is RGB888. Treat that as grayscale only when near pitch-dark.
+            try:
+                if bool(getattr(config, "PICAMERA2_FORCE_GRAY_DARK_ONLY", True)):
+                    gray_probe = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+                    dark_thr = int(getattr(config, "PICAMERA2_GRAY_DARKNESS_THRESHOLD", 12))
+                    if float(gray_probe.mean()) <= max(0, min(255, dark_thr)):
+                        return cv2.cvtColor(gray_probe, cv2.COLOR_GRAY2BGR)
+            except Exception:
+                pass
         if frame.ndim == 2:
             # If we ever get luma-only output, this indicates camera format/control mismatch.
             # Try YUV420 decode first, else keep compatibility with grayscale->BGR.
