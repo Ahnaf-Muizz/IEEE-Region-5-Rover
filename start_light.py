@@ -39,10 +39,16 @@ def wait_for_start_light(baseline_frames=30, change_threshold=25, required_frame
     baseline = sum(values) / len(values)
     print(f"Baseline brightness: {baseline:.1f}")
     print("Waiting for brightness change...")
+    wait_deadline = time.time() + float(getattr(config, "START_LIGHT_TIMEOUT_S", 10.0))
+    fallback_after_timeout = bool(getattr(config, "START_LIGHT_FALLBACK_AFTER_TIMEOUT", True))
 
     detections = 0
 
     while True:
+        if fallback_after_timeout and time.time() >= wait_deadline:
+            print("START LIGHT timeout reached; proceeding with autonomous sequence.")
+            return True
+
         frame = camera_io.read_bgr()
         if frame is None:
             time.sleep(0.05)
