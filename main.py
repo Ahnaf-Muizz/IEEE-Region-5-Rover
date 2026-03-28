@@ -65,11 +65,11 @@ def run_full_mission():
         print("Initial pose:")
         pose.print_pose()
 
-        print("Leaving start area...")
+        print("Leaving start area (reversed direction)...")
         if config.ODOMETRY_MODE == "encoder":
             pose.drive_distance_signed(config.LEAVE_START_DISTANCE_M)
         else:
-            pose.drive_for(config.LEAVE_START_TIME)
+            pose.back_for(config.LEAVE_START_TIME)
         pose.print_pose()
 
         frame = camera_io.read_bgr()

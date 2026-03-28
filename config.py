@@ -85,6 +85,9 @@ DEGREES_PER_SECOND = 110.0
 # Leave Landing Site: prefer encoder distance when ODOMETRY_MODE == "encoder"
 LEAVE_START_DISTANCE_M = 0.52
 LEAVE_START_TIME = 1.5
+# Direction for the very first movement after start-light detection.
+# Set to "backward" to reverse that initial departure leg only.
+LEAVE_START_DIRECTION = "backward"  # options: "forward", "backward"
 BACKUP_TIME = 0.7
 TURN_AVOID_TIME = 0.55
 
