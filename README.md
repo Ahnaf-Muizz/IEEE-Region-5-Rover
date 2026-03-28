@@ -1,6 +1,6 @@
 # Mining Mayhem — Rover navigation (IEEE Region 5)
 
-This repository holds **autonomous navigation** code for the **Mining Mayhem** game: camera, AprilTags, purple “Astral Material” detection, map-aware navigation with **time-based odometry** (or encoder odometry if external encoders are added), and a mission script. **Arm / servo pickup** and **CSC manipulation** are left as integration hooks in `main.py` (comments say where to add them).
+This repository holds **autonomous navigation** code for the **Mining Mayhem** game: camera, AprilTags, purple “Astral Material” detection, map-aware navigation with **time-based odometry** (or encoder odometry if external encoders are added), and a mission script.
 
 Use this README when continuing on a **Raspberry Pi 5** (e.g. edit in Firefox via [code-server](https://github.com/coder/code-server) or another web IDE, or SSH + editor). **Cursor chat history does not transfer**; everything important should live here and in `config.py`.
 
@@ -15,7 +15,6 @@ Use this README when continuing on a **Raspberry Pi 5** (e.g. edit in Firefox vi
 | **Camera placement** | Offset **to the right** of the robot centerline so the claw does not block the view. Steering uses `CAMERA_STEERING_OFFSET_PX` in `config.py` (tune on the field). |
 | **Drive** | Tank / differential chassis via **L298N dual H-bridge** on Raspberry Pi GPIO. **No IMU.** |
 | **Odometry** | With plain L298N (no encoder feedback), use **time-based** odometry (`ODOMETRY_MODE = "time"`). If you later add encoder hardware, switch back to encoder mode and tune related constants. |
-| **Manipulator** | Arm + wrist + claw; **3× MG995-class servos** (user part number may read MG99R). **Not wired in this repo** — you will merge your servo code later. |
 | **Sensors intentionally not used** | No ultrasonic, no magnetometer (Geodinium is magnetic; Nebulite is not — vision uses **purple color** only). |
 
 ---
