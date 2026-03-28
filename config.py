@@ -23,6 +23,15 @@ SHOW_CAMERA = False
 SHOW_DEBUG_MASK = False
 # Match proven pipeline: interpret frames as RGB for purple HSV conversion.
 MATERIAL_COLOR_ORDER = "rgb"  # options: "rgb", "bgr"
+# Camera mounting offset from rover center (meters).
+# Measured values from user:
+#   x-axis: 71.31 mm, y-axis: 50.19 mm
+# Mapped here as:
+#   CAMERA_OFFSET_FORWARD_M = +y (forward from rover center)
+#   CAMERA_OFFSET_RIGHT_M   = +x (to the right of rover center)
+CAMERA_OFFSET_FORWARD_M = 0.05019
+CAMERA_OFFSET_RIGHT_M = 0.07131
+USE_CAMERA_OFFSET_COMPENSATION = True
 
 # --- Match ---
 MATCH_DURATION = 180.0  # Game Manual: 3 minutes

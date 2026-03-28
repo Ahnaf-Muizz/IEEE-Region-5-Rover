@@ -63,6 +63,12 @@ Official docs: **Game Manual 1 & 2** (IEEE Region 5), **Field Assembly Guide**.
 **Material color-order:** this stack now uses your known-good behavior by default:
 `MATERIAL_COLOR_ORDER = "rgb"` in `config.py` (RGB->HSV for purple mask).
 
+**Camera mount offset compensation:** pose snaps from AprilTags are corrected from
+camera position to rover center using:
+- `CAMERA_OFFSET_X_M = 0.07131` (forward of rover center)
+- `CAMERA_OFFSET_Y_M = 0.05019` (left of rover center)
+Update these in `config.py` if your mount changes.
+
 ---
 
 ## Raspberry Pi 5 setup (after `git clone`)

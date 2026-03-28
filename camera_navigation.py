@@ -8,6 +8,7 @@ import time
 import cv2
 
 import april_tags
+import camera_geometry
 import config
 import material_detection
 import pose
@@ -79,18 +80,23 @@ def correct_pose_from_wall_tag(tag):
     error = cx - ref_x
 
     if tid == 5:
-        pose.robot_x, pose.robot_y = config.FIELD["wall_tag_5"]
+        cam_x, cam_y = config.FIELD["wall_tag_5"]
         pose.robot_heading = 90.0
     elif tid == 6:
-        pose.robot_x, pose.robot_y = config.FIELD["wall_tag_6"]
+        cam_x, cam_y = config.FIELD["wall_tag_6"]
         pose.robot_heading = 270.0
     elif tid == 7:
-        pose.robot_x, pose.robot_y = config.FIELD["wall_tag_7"]
+        cam_x, cam_y = config.FIELD["wall_tag_7"]
         pose.robot_heading = 0.0
+    else:
+        return
 
     half_w = config.FRAME_WIDTH / 2.0
     pose.robot_heading += (error / half_w) * 12.0
     pose.normalize_heading()
+    pose.robot_x, pose.robot_y = camera_geometry.camera_to_rover_center(
+        cam_x, cam_y, pose.robot_heading
+    )
 
     encoder_state.reset_baseline()
     print(f"Localized from wall tag {tid}")
