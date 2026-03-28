@@ -1,33 +1,27 @@
 #!/usr/bin/env python3
 """
-Motor control for a tank chassis over I2C.
+Motor control for L298N dual H-bridge using Raspberry Pi GPIO (BCM pins).
 
-Integrated from the working keyboard control behavior:
-- left motor register: 51
-- right motor register: 52
-- stop raw value: 0
-- forward raw value: 50
-- reverse raw value: 200
-
-This module is compatible with the rover stack's expected interface:
+Compatible interface for rover stack:
 forward, reverse, turn_left, turn_right, stop, read_wheel_ticks.
 """
 
 import atexit
 
-try:
-    from smbus2 import SMBus
+import config
 
-    I2C_AVAILABLE = True
-except ImportError:
-    print("Warning: smbus2 not installed!")
-    print("Install with: pip3 install smbus2 --break-system-packages")
-    I2C_AVAILABLE = False
-    SMBus = None
+try:
+    import RPi.GPIO as GPIO
+
+    GPIO_AVAILABLE = True
+except Exception:
+    GPIO_AVAILABLE = False
+    GPIO = None
+    print("Warning: RPi.GPIO not available. Motor control running in simulation mode.")
 
 
 class MotorController:
-    """Controls tracked chassis with I2C motor driver."""
+    """Controls left/right motor channels through an L298N."""
 
     STATE_IDLE = "idle"
     STATE_FORWARD = "forward"
@@ -41,92 +35,137 @@ class MotorController:
     SPEED_MEDIUM = 50
     SPEED_LOW = 25
 
-    # Motor registers (hardware-specific)
-    LEFT_MOTOR = 51
-    RIGHT_MOTOR = 52
-    RAW_STOP = 0
-    RAW_FORWARD = 50
-    RAW_REVERSE = 200
-
     def __init__(
         self,
-        i2c_address=0x34,
-        i2c_bus=1,
-        raw_forward=RAW_FORWARD,
-        raw_reverse=RAW_REVERSE,
-        raw_stop=RAW_STOP,
-        fixed_raw_speed=True,
+        left_in1=config.L298N_LEFT_IN1,
+        left_in2=config.L298N_LEFT_IN2,
+        left_en=config.L298N_LEFT_EN,
+        right_in1=config.L298N_RIGHT_IN1,
+        right_in2=config.L298N_RIGHT_IN2,
+        right_en=config.L298N_RIGHT_EN,
+        pwm_hz=config.L298N_PWM_FREQUENCY_HZ,
+        use_pwm=config.L298N_USE_PWM,
+        left_invert=config.L298N_LEFT_INVERT,
+        right_invert=config.L298N_RIGHT_INVERT,
     ):
-        self.i2c_address = i2c_address
-        self.i2c_bus_number = i2c_bus
+        self.left_in1 = int(left_in1)
+        self.left_in2 = int(left_in2)
+        self.left_en = int(left_en)
+        self.right_in1 = int(right_in1)
+        self.right_in2 = int(right_in2)
+        self.right_en = int(right_en)
+        self.pwm_hz = max(50, int(pwm_hz))
+        self.use_pwm = bool(use_pwm)
+        self.left_invert = bool(left_invert)
+        self.right_invert = bool(right_invert)
+
         self.current_state = self.STATE_STOP
         self.current_speed = self.SPEED_FULL
-        self.bus = None
         self._warned_no_encoder = False
-        self.raw_forward = max(0, min(255, int(raw_forward)))
-        self.raw_reverse = max(0, min(255, int(raw_reverse)))
-        self.raw_stop = max(0, min(255, int(raw_stop)))
-        # Default True to match the known-good keyboard control exactly.
-        self.fixed_raw_speed = bool(fixed_raw_speed)
+        self._gpio_ready = False
+        self._pwm_left = None
+        self._pwm_right = None
 
-        if I2C_AVAILABLE:
+        if GPIO_AVAILABLE:
             try:
-                self.bus = SMBus(i2c_bus)
-                if self._test_connection():
-                    print(f"Motor driver found at address 0x{i2c_address:02X}")
-                else:
-                    print(f"Device at 0x{i2c_address:02X} not responding")
-                    print("Check wiring, power supply, and I2C address.")
-            except Exception as e:
-                print(f"Failed to initialize I2C: {e}")
-                self.bus = None
-        else:
-            print("smbus2 not available - simulation mode")
+                GPIO.setwarnings(False)
+                GPIO.setmode(GPIO.BCM)
 
+                for pin in (
+                    self.left_in1,
+                    self.left_in2,
+                    self.left_en,
+                    self.right_in1,
+                    self.right_in2,
+                    self.right_en,
+                ):
+                    GPIO.setup(pin, GPIO.OUT, initial=GPIO.LOW)
+
+                if self.use_pwm:
+                    self._pwm_left = GPIO.PWM(self.left_en, self.pwm_hz)
+                    self._pwm_right = GPIO.PWM(self.right_en, self.pwm_hz)
+                    self._pwm_left.start(0)
+                    self._pwm_right.start(0)
+                else:
+                    GPIO.output(self.left_en, GPIO.HIGH)
+                    GPIO.output(self.right_en, GPIO.HIGH)
+
+                self._gpio_ready = True
+                print("L298N GPIO initialized (BCM mode).")
+            except Exception as e:
+                print(f"Failed to initialize GPIO for L298N: {e}")
+                self._gpio_ready = False
+        else:
+            print("RPi.GPIO unavailable - simulation mode")
+
+        self.stop()
         atexit.register(self.cleanup)
 
-    def _test_connection(self):
-        if self.bus is None:
-            return False
-        try:
-            self.bus.read_byte(self.i2c_address)
-            return True
-        except Exception:
-            return False
+    @staticmethod
+    def _clamp_speed(speed_percent):
+        return max(0, min(100, int(speed_percent)))
 
-    def _speed_to_raw(self, target_raw, speed_percent):
-        """
-        Translate rover speed percent to a raw byte.
+    def _set_enable_duty(self, left_duty, right_duty):
+        if not self._gpio_ready:
+            return
+        if self.use_pwm:
+            self._pwm_left.ChangeDutyCycle(self._clamp_speed(left_duty))
+            self._pwm_right.ChangeDutyCycle(self._clamp_speed(right_duty))
+        else:
+            GPIO.output(self.left_en, GPIO.HIGH if left_duty > 0 else GPIO.LOW)
+            GPIO.output(self.right_en, GPIO.HIGH if right_duty > 0 else GPIO.LOW)
 
-        fixed_raw_speed=True preserves keyboard_control behavior exactly:
-        any non-zero speed uses the known-good raw direction byte.
-        """
-        speed_percent = max(0, min(100, int(speed_percent)))
-        if speed_percent == 0:
-            return self.raw_stop
-        if self.fixed_raw_speed:
-            return target_raw
-        return int(round(self.raw_stop + (target_raw - self.raw_stop) * (speed_percent / 100.0)))
-
-    def _write_motor_raw(self, motor_register, raw_value):
-        motor_value = max(0, min(255, int(raw_value)))
-
-        if self.bus is None:
-            motor_name = "LEFT" if motor_register == self.LEFT_MOTOR else "RIGHT"
-            print(f"[SIM] {motor_name} motor raw={motor_value}")
+    def _apply_side(self, is_left, forward, duty):
+        if not self._gpio_ready:
+            side = "LEFT" if is_left else "RIGHT"
+            direction = "FWD" if forward else "REV"
+            print(f"[SIM] {side} {direction} duty={self._clamp_speed(duty)}")
             return
 
-        try:
-            self.bus.write_byte_data(self.i2c_address, motor_register, motor_value)
-        except Exception as e:
-            print(f"Error writing to motor: {e}")
+        if is_left:
+            in1, in2 = self.left_in1, self.left_in2
+            invert = self.left_invert
+        else:
+            in1, in2 = self.right_in1, self.right_in2
+            invert = self.right_invert
 
-    def _write_pair(self, left_raw, right_raw):
-        self._write_motor_raw(self.LEFT_MOTOR, left_raw)
-        self._write_motor_raw(self.RIGHT_MOTOR, right_raw)
+        duty = self._clamp_speed(duty)
+        if duty <= 0:
+            GPIO.output(in1, GPIO.LOW)
+            GPIO.output(in2, GPIO.LOW)
+            return
+
+        logical_forward = not forward if invert else forward
+        if logical_forward:
+            GPIO.output(in1, GPIO.HIGH)
+            GPIO.output(in2, GPIO.LOW)
+        else:
+            GPIO.output(in1, GPIO.LOW)
+            GPIO.output(in2, GPIO.HIGH)
+
+    def _drive(self, left_forward, right_forward, speed_percent, state_name, sim_label):
+        speed = self._clamp_speed(speed_percent if speed_percent is not None else self.current_speed)
+        if speed <= 0:
+            self.stop()
+            return
+
+        if not self._gpio_ready:
+            print(f"[SIM] {sim_label} speed={speed}%")
+
+        self._apply_side(True, left_forward, speed)
+        self._apply_side(False, right_forward, speed)
+        self._set_enable_duty(speed, speed)
+        self.current_state = state_name
 
     def stop(self):
-        self._write_pair(self.raw_stop, self.raw_stop)
+        if self._gpio_ready:
+            GPIO.output(self.left_in1, GPIO.LOW)
+            GPIO.output(self.left_in2, GPIO.LOW)
+            GPIO.output(self.right_in1, GPIO.LOW)
+            GPIO.output(self.right_in2, GPIO.LOW)
+            self._set_enable_duty(0, 0)
+        else:
+            print("[SIM] stop")
         self.current_state = self.STATE_STOP
 
     def idle(self):
@@ -134,41 +173,19 @@ class MotorController:
         self.current_state = self.STATE_IDLE
 
     def forward(self, speed_percent=None):
-        speed = speed_percent if speed_percent is not None else self.current_speed
-        speed = max(0, min(100, int(speed)))
-        val = self._speed_to_raw(self.raw_forward, speed)
-        self._write_pair(val, val)
-        self.current_state = self.STATE_FORWARD
+        self._drive(True, True, speed_percent, self.STATE_FORWARD, "forward")
 
     def reverse(self, speed_percent=None):
-        speed = speed_percent if speed_percent is not None else self.current_speed
-        speed = max(0, min(100, int(speed)))
-        val = self._speed_to_raw(self.raw_reverse, speed)
-        self._write_pair(val, val)
-        self.current_state = self.STATE_REVERSE
+        self._drive(False, False, speed_percent, self.STATE_REVERSE, "reverse")
 
     def turn_right(self, speed_percent=None):
-        speed = speed_percent if speed_percent is not None else self.current_speed
-        speed = max(0, min(100, int(speed)))
-        # Match working keyboard_control.py:
-        # right turn = left reverse, right forward.
-        left_val = self._speed_to_raw(self.raw_reverse, speed)
-        right_val = self._speed_to_raw(self.raw_forward, speed)
-        self._write_pair(left_val, right_val)
-        self.current_state = self.STATE_TURN_RIGHT
+        self._drive(True, False, speed_percent, self.STATE_TURN_RIGHT, "turn_right")
 
     def turn_left(self, speed_percent=None):
-        speed = speed_percent if speed_percent is not None else self.current_speed
-        speed = max(0, min(100, int(speed)))
-        # Match working keyboard_control.py:
-        # left turn = left forward, right reverse.
-        left_val = self._speed_to_raw(self.raw_forward, speed)
-        right_val = self._speed_to_raw(self.raw_reverse, speed)
-        self._write_pair(left_val, right_val)
-        self.current_state = self.STATE_TURN_LEFT
+        self._drive(False, True, speed_percent, self.STATE_TURN_LEFT, "turn_left")
 
     def slow_down(self, target_speed_percent):
-        target_speed_percent = max(0, min(100, int(target_speed_percent)))
+        target_speed_percent = self._clamp_speed(target_speed_percent)
         self.set_speed(target_speed_percent)
 
         if self.current_state == self.STATE_FORWARD:
@@ -181,7 +198,7 @@ class MotorController:
             self.turn_left()
 
     def set_speed(self, speed_percent):
-        self.current_speed = max(0, min(100, int(speed_percent)))
+        self.current_speed = self._clamp_speed(speed_percent)
 
     def get_state(self):
         return self.current_state
@@ -191,17 +208,11 @@ class MotorController:
 
     def read_wheel_ticks(self):
         """
-        Return cumulative (left_ticks, right_ticks).
-
-        This specific I2C interface does not expose encoder counters in the
-        provided protocol, so we return zero deltas. The rover stack handles
-        this by falling back to time-based odometry when ticks stall.
+        L298N does not include encoder feedback.
+        Return (0, 0) so pose code can use time-mode fallback.
         """
         if not self._warned_no_encoder:
-            print(
-                "read_wheel_ticks(): encoder registers not implemented for this driver; "
-                "returning (0, 0)."
-            )
+            print("read_wheel_ticks(): no encoder interface on L298N backend; returning (0, 0).")
             self._warned_no_encoder = True
         return (0, 0)
 
@@ -210,15 +221,30 @@ class MotorController:
             self.stop()
         except Exception:
             pass
-        if self.bus is not None:
+
+        if self._gpio_ready:
             try:
-                self.bus.close()
+                if self._pwm_left is not None:
+                    self._pwm_left.stop()
+                if self._pwm_right is not None:
+                    self._pwm_right.stop()
+                GPIO.cleanup(
+                    [
+                        self.left_in1,
+                        self.left_in2,
+                        self.left_en,
+                        self.right_in1,
+                        self.right_in2,
+                        self.right_en,
+                    ]
+                )
             except Exception:
                 pass
-            self.bus = None
+
+        self._gpio_ready = False
 
 
 if __name__ == "__main__":
     m = MotorController()
     print("read_wheel_ticks() =", m.read_wheel_ticks())
-    print("Motor controller ready.")
+    print("L298N motor controller ready.")
