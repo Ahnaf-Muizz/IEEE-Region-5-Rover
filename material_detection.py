@@ -10,15 +10,30 @@ import numpy as np
 import config
 
 
-def get_best_purple_material(frame_bgr):
-    hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
-
-    mask = cv2.inRange(hsv, config.PURPLE_LOWER, config.PURPLE_UPPER)
-
+def _mask_purple(hsv_frame):
+    mask = cv2.inRange(hsv_frame, config.PURPLE_LOWER, config.PURPLE_UPPER)
     kernel = np.ones((5, 5), np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
     mask = cv2.GaussianBlur(mask, (5, 5), 0)
+    return mask
+
+
+def get_best_purple_material(frame_bgr):
+    # Most OpenCV camera paths are BGR; some Pi camera paths may already be RGB.
+    # Allow auto fallback to keep purple segmentation robust across both.
+    order = str(getattr(config, "MATERIAL_COLOR_ORDER", "auto")).lower()
+    hsv_bgr = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
+    mask_bgr = _mask_purple(hsv_bgr)
+    mask = mask_bgr
+    if order == "rgb":
+        hsv_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_RGB2HSV)
+        mask = _mask_purple(hsv_rgb)
+    elif order == "auto":
+        hsv_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_RGB2HSV)
+        mask_rgb = _mask_purple(hsv_rgb)
+        if int(np.count_nonzero(mask_rgb)) > int(np.count_nonzero(mask_bgr)):
+            mask = mask_rgb
 
     if config.SHOW_DEBUG_MASK:
         cv2.imshow("Purple Mask", mask)

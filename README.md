@@ -50,6 +50,7 @@ Official docs: **Game Manual 1 & 2** (IEEE Region 5), **Field Assembly Guide**.
 | `pose.py` | Field pose `(x, y)` + heading; `drive_distance_signed`, `rotate_to_heading`, etc. |
 | `camera_navigation.py` | Telemetry search, `drive_toward_coordinate`, material search/approach, optional wall-tag snap. |
 | `main.py` | CLI modes + full mission orchestration. |
+| `keyboard_control.py` | L298N keyboard motor test utility (`1/2/3/4/5/q`). |
 
 **Motor mapping:** `drive_control.py` uses direct semantic mapping
 (`forward`→`motor.forward`, `backward`→`motor.reverse`,
@@ -58,6 +59,12 @@ Official docs: **Game Manual 1 & 2** (IEEE Region 5), **Field Assembly Guide**.
 **L298N pin config:** edit `L298N_*` settings in `config.py` to match your wiring
 (BCM pin numbering). If a side spins opposite, set `L298N_LEFT_INVERT` or
 `L298N_RIGHT_INVERT` to `True`.
+
+**Material color-order fallback:** if purple detection seems weak/gray with your camera pipeline,
+set `MATERIAL_COLOR_ORDER` in `config.py`:
+- `"auto"` (default): try BGR first, then RGB fallback for mask area
+- `"bgr"`: force BGR→HSV
+- `"rgb"`: force RGB→HSV
 
 ---
 

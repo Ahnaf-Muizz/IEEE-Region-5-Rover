@@ -1,6 +1,6 @@
 """
 Pose: field coordinates (m) + heading (deg). Updates via encoders when ODOMETRY_MODE=='encoder',
-else time × METERS_PER_SECOND / DEGREES_PER_SECOND.
+else time * METERS_PER_SECOND / DEGREES_PER_SECOND.
 """
 
 import math
@@ -114,7 +114,7 @@ def drive_distance_signed(signed_meters, speed=None):
     while traveled < target - config.DISTANCE_TOLERANCE_M:
         if time.time() - t0 > max_time:
             rem = max(0.0, target - traveled)
-            print("[pose] drive_distance timeout — time fallback for remainder")
+            print("[pose] drive_distance timeout - time fallback for remainder")
             if rem > 0:
                 fake_t = rem / max(config.METERS_PER_SECOND, 0.05)
                 if signed_meters > 0:
@@ -219,7 +219,7 @@ def rotate_to_heading(target_heading, speed=config.TURN_SPEED):
     if abs(diff) < config.HEADING_TOLERANCE_DEG:
         return
 
-    print(f"Rotating from {robot_heading:.1f} toward {target_heading:.1f} (Δ={diff:.1f})")
+    print(f"Rotating from {robot_heading:.1f} toward {target_heading:.1f} (d={diff:.1f})")
 
     import drive_control
 
@@ -244,7 +244,7 @@ def rotate_to_heading(target_heading, speed=config.TURN_SPEED):
 
     while abs(shortest_turn_angle(robot_heading, target_heading)) > config.HEADING_TOLERANCE_DEG:
         if time.time() - t0 > max_time:
-            print("[pose] rotate timeout — snapping heading (check encoders / signs)")
+            print("[pose] rotate timeout - snapping heading (check encoders / signs)")
             robot_heading = target_heading % 360.0
             break
 

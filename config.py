@@ -21,6 +21,9 @@ FRAME_WIDTH = 640
 FRAME_HEIGHT = 480
 SHOW_CAMERA = False
 SHOW_DEBUG_MASK = False
+# Some camera pipelines may deliver RGB-ordered frames while others deliver BGR.
+# Keep "auto" to use BGR first and fall back to RGB for purple masking if needed.
+MATERIAL_COLOR_ORDER = "auto"  # options: "auto", "bgr", "rgb"
 
 # --- Match ---
 MATCH_DURATION = 180.0  # Game Manual: 3 minutes
