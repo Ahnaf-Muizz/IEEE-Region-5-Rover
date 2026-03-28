@@ -40,7 +40,7 @@ Official docs: **Game Manual 1 & 2** (IEEE Region 5), **Field Assembly Guide**.
 |------|------|
 | `config.py` | All tunables: camera, field map, odometry, purple HSV, flags. **Start here on a new machine.** |
 | `camera_io.py` | USB (`cv2.VideoCapture`) or optional `picamera2`; frames as **BGR**. |
-| `april_tags.py` | tag36h11 detection (`pupil-apriltags` or `apriltag`). |
+| `april_tags.py` | tag36h11 detection (`pupil-apriltags` or `apriltag`) + role helpers (beacon/boundary, forward, dropoff, cave). |
 | `material_detection.py` | Purple blob + `material_steering_error_px()` using steering center (camera offset). |
 | `start_light.py` | Start LED wait. |
 | `encoder_state.py` | Encoder tick deltas between reads. |
@@ -48,7 +48,7 @@ Official docs: **Game Manual 1 & 2** (IEEE Region 5), **Field Assembly Guide**.
 | `motor_control.py` | L298N GPIO backend (`RPi.GPIO`), with the same high-level motor API expected by navigation code. |
 | `drive_control.py` | Semantic `forward`/`backward`/`left`/`right`/`stop` (maps to your motor API naming). |
 | `pose.py` | Field pose `(x, y)` + heading; `drive_distance_signed`, `rotate_to_heading`, etc. |
-| `camera_navigation.py` | Telemetry search, `drive_toward_coordinate`, material search/approach, optional wall-tag snap. |
+| `camera_navigation.py` | AprilTag role actions + telemetry search, `drive_toward_coordinate`, material search/approach, optional wall-tag snap. |
 | `main.py` | CLI modes + full mission orchestration. |
 | `keyboard_control.py` | L298N keyboard motor test utility (`1/2/3/4/5/q`). |
 

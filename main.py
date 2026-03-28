@@ -39,8 +39,10 @@ import start_light
 from camera_geometry import camera_world_to_rover_center
 from camera_navigation import (
     approach_astral_material,
+    execute_tag_behavior,
     go_to_material_search_zone,
-    go_to_pad,
+    go_to_dropoff_tag6,
+    go_to_random_beacon_from_0_to_4,
     match_time_expired,
     search_for_astral_material,
     search_for_telemetry,
@@ -49,7 +51,7 @@ from camera_navigation import (
 
 
 def run_full_mission():
-    telemetry_id = None
+    beacon_id = None
     last_turn_right = False
 
     start_light.wait_for_start_light()
@@ -72,7 +74,7 @@ def run_full_mission():
         if frame is not None:
             try_localize_from_wall_tags(frame)
 
-        while telemetry_id is None:
+        while beacon_id is None:
             if match_time_expired(match_start_time):
                 print("Match time expired during telemetry search.")
                 drive_control.stop()
@@ -81,8 +83,10 @@ def run_full_mission():
             tag_id, result = search_for_telemetry(match_start_time)
 
             if result == "found":
-                telemetry_id = tag_id
-                break
+                if tag_id in (0, 1, 2, 3, 4):
+                    beacon_id = tag_id
+                    break
+                execute_tag_behavior(tag_id)
 
             elif result == "obstacle":
                 last_turn_right = not last_turn_right
@@ -99,15 +103,12 @@ def run_full_mission():
                 drive_control.stop()
                 return
 
-        print("Telemetry target pad =", telemetry_id)
-
-        pose.robot_x, pose.robot_y = camera_world_to_rover_center(
-            config.FIELD["mast"][0], config.FIELD["mast"][1], 180.0
-        )
-        pose.robot_heading = 180.0
+        print("Beacon boundary tag selected =", beacon_id)
+        tx, ty = go_to_random_beacon_from_0_to_4(beacon_id)
+        pose.robot_x, pose.robot_y = tx, ty
         pose.normalize_heading()
         encoder_state.reset_baseline()
-        print("Telemetry confirmed. Pose snapped to mast location.")
+        print("Beacon confirmed. Pose snapped to selected boundary tag.")
         pose.print_pose()
 
         nav_result = go_to_material_search_zone(match_start_time)
@@ -158,11 +159,11 @@ def run_full_mission():
                 drive_control.stop()
                 return
 
-        pad_result = go_to_pad(telemetry_id, match_start_time)
-        if pad_result == "reached":
-            print("Arrived at selected rendezvous pad. (Hook CSC dropoff here.)")
+        drop_result = go_to_dropoff_tag6(match_start_time)
+        if drop_result == "reached":
+            print("Arrived at dropoff point (Tag 6). (Hook CSC dropoff here.)")
         else:
-            print("Failed to reach selected rendezvous pad.")
+            print("Failed to reach dropoff point (Tag 6).")
 
     except KeyboardInterrupt:
         print("Stopped by user.")

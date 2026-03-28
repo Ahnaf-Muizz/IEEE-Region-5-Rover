@@ -111,7 +111,7 @@ MATERIAL_FORWARD_STEP = 0.35
 # VERIFY against Game Manual 2 figures and your taped field; ±1 in per rules.
 FIELD = {
     "start": (0.20, 0.20),
-    "mast": (0.20, 1.20),
+    "mast": (0.20, 1.20),  # fallback/default beacon mast reference
     "pad_0": (0.35, 0.45),
     "pad_1": (0.35, 0.75),
     "pad_2": (0.35, 1.05),
@@ -121,7 +121,30 @@ FIELD = {
     "wall_tag_6": (2.20, 0.10),
     "wall_tag_7": (2.30, 1.00),
     "material_search_zone": (1.20, 1.00),
+    # Boundary tag references (IDs 0-4). Update with measured field coordinates.
+    "tag_0": (0.35, 0.45),
+    "tag_1": (0.35, 0.75),
+    "tag_2": (0.35, 1.05),
+    "tag_3": (0.35, 1.35),
+    "tag_4": (0.35, 1.65),
+    # Functional objectives per user mapping.
+    "dropoff": (0.35, 1.05),      # Tag 6 region
+    "cave_entrance": (2.00, 1.00),  # Tag 7 region
 }
+
+# --- AprilTag role mapping per current game plan ---
+# IDs 0-4: field boundary / random beacon mast selection
+TAG_BEACON_IDS = [0, 1, 2, 3, 4]
+# ID 5: "go forwards"
+TAG_FORWARD_ID = 5
+# ID 6: dropoff point
+TAG_DROPOFF_ID = 6
+# ID 7: cave entrance + continue straight
+TAG_CAVE_ENTRY_ID = 7
+
+# Role-action tuning
+TAG5_FORWARD_SECONDS = 0.8
+TAG7_STRAIGHT_SECONDS = 0.9
 
 # --- Motor PWM tuning (passed to motor_control) ---
 FORWARD_SPEED = 100

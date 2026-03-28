@@ -1,5 +1,11 @@
 """
-AprilTag detection (tag36h11). Competition: wall IDs 5,6,7; mast telemetry 0–4.
+AprilTag detection (tag36h11) with game-role helpers.
+
+Role mapping used by this rover stack:
+- IDs 0..4: boundary/beacon-mast tags (one is active each match)
+- ID 5: forward command tag
+- ID 6: container dropoff tag
+- ID 7: cave entrance (drive straight) tag
 """
 
 import math
@@ -86,12 +92,46 @@ def get_best_tag_by_ids(frame_bgr, valid_ids):
     return good[0]
 
 
+BOUNDARY_BEACON_TAG_IDS = [0, 1, 2, 3, 4]
+FORWARD_COMMAND_TAG_ID = 5
+DROPOFF_TAG_ID = 6
+CAVE_ENTRY_TAG_ID = 7
+
+
+def get_best_boundary_beacon_tag(frame_bgr):
+    return get_best_tag_by_ids(frame_bgr, BOUNDARY_BEACON_TAG_IDS)
+
+
+def get_best_beacon_boundary_tag(frame_bgr):
+    """Alias with alternate word order."""
+    return get_best_boundary_beacon_tag(frame_bgr)
+
+
+def get_best_forward_command_tag(frame_bgr):
+    return get_best_tag_by_ids(frame_bgr, [FORWARD_COMMAND_TAG_ID])
+
+
+def get_best_dropoff_tag(frame_bgr):
+    return get_best_tag_by_ids(frame_bgr, [DROPOFF_TAG_ID])
+
+
+def get_best_cave_entry_tag(frame_bgr):
+    return get_best_tag_by_ids(frame_bgr, [CAVE_ENTRY_TAG_ID])
+
+
+def get_best_role_tag(frame_bgr):
+    return get_best_tag_by_ids(frame_bgr, [FORWARD_COMMAND_TAG_ID, DROPOFF_TAG_ID, CAVE_ENTRY_TAG_ID])
+
+
+# Backward-compatibility aliases used across existing modules.
 def get_best_telemetry_tag(frame_bgr):
-    return get_best_tag_by_ids(frame_bgr, [0, 1, 2, 3, 4])
+    return get_best_boundary_beacon_tag(frame_bgr)
 
 
 def get_best_wall_tag(frame_bgr):
-    return get_best_tag_by_ids(frame_bgr, [5, 6, 7])
+    return get_best_tag_by_ids(
+        frame_bgr, [FORWARD_COMMAND_TAG_ID, DROPOFF_TAG_ID, CAVE_ENTRY_TAG_ID]
+    )
 
 
 def tag_heading_error_px(tag):

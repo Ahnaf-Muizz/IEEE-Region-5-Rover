@@ -170,7 +170,7 @@ def camera_io_read():
 
 
 def search_for_telemetry(match_start_time):
-    print("Searching for telemetry tag...")
+    print("Searching for beacon/field boundary tag (0-4)...")
     start = time.time()
 
     while time.time() - start < config.SEARCH_TIMEOUT:
@@ -187,26 +187,45 @@ def search_for_telemetry(match_start_time):
             time.sleep(0.05)
             continue
 
-        telemetry_tag = april_tags.get_best_telemetry_tag(frame)
-        wall_tag = april_tags.get_best_wall_tag(frame)
+        boundary_tag = april_tags.get_best_beacon_boundary_tag(frame)
+        role_tag = april_tags.get_best_role_tag(frame)
 
-        if telemetry_tag is not None:
-            show_frame(frame, tag=telemetry_tag)
-            tid = april_tags.get_tag_id(telemetry_tag)
-            print(f"Found telemetry tag: {tid}")
+        if boundary_tag is not None:
+            show_frame(frame, tag=boundary_tag)
+            tid = april_tags.get_tag_id(boundary_tag)
+            print(f"Found beacon/field boundary tag: {tid}")
             stop()
             return tid, "found"
 
-        if wall_tag is not None and config.USE_WALL_TAG_POSE_CORRECTION:
-            show_frame(frame, tag=wall_tag)
-            correct_pose_from_wall_tag(wall_tag)
+        if role_tag is not None and config.USE_WALL_TAG_POSE_CORRECTION:
+            show_frame(frame, tag=role_tag)
+            correct_pose_from_wall_tag(role_tag)
         else:
-            show_frame(frame, tag=wall_tag if wall_tag is not None else None)
+            show_frame(frame, tag=role_tag if role_tag is not None else None)
 
         pose.left_for(0.10, config.TURN_SPEED)
 
     stop()
     return None, "timeout"
+
+
+def _field_point_for_beacon_tag(tag_id):
+    key = f"tag_{int(tag_id)}"
+    return config.FIELD[key]
+
+
+def go_to_random_beacon_from_0_to_4(beacon_id):
+    """Return configured field point for beacon/boundary tag 0..4."""
+    if beacon_id not in (0, 1, 2, 3, 4):
+        raise ValueError(f"beacon_id must be 0..4, got {beacon_id}")
+    return _field_point_for_beacon_tag(beacon_id)
+
+
+def go_to_dropoff_tag6(match_start_time):
+    """Tag 6 role: navigate to configured container dropoff point."""
+    print("Going to dropoff point (Tag 6).")
+    tx, ty = config.FIELD["dropoff_tag_6"]
+    return drive_toward_coordinate(tx, ty, match_start_time)
 
 
 def go_to_material_search_zone(match_start_time):
@@ -313,20 +332,50 @@ def approach_astral_material(match_start_time):
 
 
 def go_to_pad(pad_id, match_start_time):
-    print("Going to pad", pad_id)
-
-    if pad_id == 0:
-        tx, ty = config.FIELD["pad_0"]
-    elif pad_id == 1:
-        tx, ty = config.FIELD["pad_1"]
-    elif pad_id == 2:
-        tx, ty = config.FIELD["pad_2"]
-    elif pad_id == 3:
-        tx, ty = config.FIELD["pad_3"]
-    else:
-        tx, ty = config.FIELD["pad_4"]
-
+    # Tag 6 defines dropoff location in this mission spec.
+    print("Going to dropoff point (tag 6 role).")
+    tx, ty = config.FIELD["dropoff_tag_6"]
     return drive_toward_coordinate(tx, ty, match_start_time)
+
+
+def execute_tag_behavior(tag_id, match_start_time):
+    """
+    Execute role behavior for non-beacon tags:
+    - 5: go forwards
+    - 6: go to dropoff
+    - 7: go to cave entry then straight
+    """
+    if tag_id == april_tags.FORWARD_COMMAND_TAG_ID:
+        return execute_tag_5_forward(match_start_time)
+    if tag_id == april_tags.DROPOFF_TAG_ID:
+        return go_to_dropoff_tag6(match_start_time)
+    if tag_id == april_tags.CAVE_ENTRY_TAG_ID:
+        return execute_tag_7_cave_entry(match_start_time)
+    return "ignored"
+
+
+def execute_tag_5_forward(match_start_time):
+    """Tag 5 role: go forwards."""
+    print("Executing tag 5 role: go forwards.")
+    seconds = max(0.05, float(config.TAG5_FORWARD_SECONDS))
+    pose.drive_for(seconds, config.APPROACH_SPEED)
+    if match_time_expired(match_start_time):
+        return "match_over"
+    return "done"
+
+
+def execute_tag_7_cave_entry(match_start_time):
+    """Tag 7 role: entrance to cave and go straight."""
+    print("Executing tag 7 role: cave entrance, going straight.")
+    tx, ty = config.FIELD["cave_entry_tag_7"]
+    result = drive_toward_coordinate(tx, ty, match_start_time)
+    if result != "reached":
+        return result
+    seconds = max(0.05, float(config.TAG7_STRAIGHT_SECONDS))
+    pose.drive_for(seconds, config.APPROACH_SPEED)
+    if match_time_expired(match_start_time):
+        return "match_over"
+    return "done"
 
 
 if __name__ == "__main__":
