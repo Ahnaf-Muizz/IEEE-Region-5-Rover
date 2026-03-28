@@ -51,9 +51,11 @@ Official docs: **Game Manual 1 & 2** (IEEE Region 5), **Field Assembly Guide**.
 | `camera_navigation.py` | Telemetry search, `drive_toward_coordinate`, material search/approach, optional wall-tag snap. |
 | `main.py` | CLI modes + full mission orchestration. |
 
-**Motor mapping:** `drive_control.py` now uses direct semantic mapping
+**Motor mapping:** `drive_control.py` uses direct semantic mapping
 (`forward`→`motor.forward`, `backward`→`motor.reverse`,
 `left`→`motor.turn_left`, `right`→`motor.turn_right`).
+Current `motor_control.py` is aligned to the working raw protocol from
+keyboard testing (`stop=0`, `forward=50`, `reverse=200` on registers 51/52).
 
 ---
 
