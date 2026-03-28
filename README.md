@@ -49,8 +49,7 @@ Official docs: **Game Manual 1 & 2** (IEEE Region 5), **Field Assembly Guide**.
 | `drive_control.py` | Semantic `forward`/`backward`/`left`/`right`/`stop` (maps to your motor API naming). |
 | `pose.py` | Field pose `(x, y)` + heading; `drive_distance_signed`, `rotate_to_heading`, etc. |
 | `camera_navigation.py` | AprilTag role actions + telemetry search, `drive_toward_coordinate`, material search/approach, optional wall-tag snap. |
-| `manipulator.py` | Servo-based rock pickup + container drop sequences (`pickup_rock()`, `drop_into_container()`). |
-| `main.py` | CLI modes + full mission orchestration (now calls manipulator pickup/drop hooks). |
+| `main.py` | CLI modes + full mission orchestration. |
 | `keyboard_control.py` | L298N keyboard motor test utility (`1/2/3/4/5/q`). |
 
 **Motor mapping:** `drive_control.py` uses direct semantic mapping
@@ -146,7 +145,6 @@ Motion commands that can move the robot require **`--yes`** where documented.
 - [ ] Tune **`CAMERA_STEERING_OFFSET_PX`** and **`PURPLE_*`** HSV with venue lighting.
 - [ ] Install **`pupil-apriltags`** (or `apriltag`) on the Pi and verify `python april_tags.py`.
 - [ ] Decide **`USE_WALL_TAG_POSE_CORRECTION`**: `False` = dead-reckoning + map only; `True` = correct drift when wall tags visible.
-- [ ] Tune manipulator servo angles/timing in `config.py` on real hardware.
 
 ---
 
