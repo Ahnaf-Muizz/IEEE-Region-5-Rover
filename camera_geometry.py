@@ -11,6 +11,30 @@ import math
 import config
 
 
+def _get_camera_offsets_forward_right():
+    """
+    Return camera offsets in rover body frame:
+    - forward: +toward rover front
+    - right: +toward rover right side
+
+    Supports both naming schemes for backward compatibility:
+    - New: CAMERA_OFFSET_FORWARD_M / CAMERA_OFFSET_RIGHT_M
+    - Legacy: CAMERA_OFFSET_X_M (+forward), CAMERA_OFFSET_Y_M (+left)
+    """
+    if hasattr(config, "CAMERA_OFFSET_FORWARD_M"):
+        forward = float(config.CAMERA_OFFSET_FORWARD_M)
+    else:
+        forward = float(getattr(config, "CAMERA_OFFSET_X_M", 0.0))
+
+    if hasattr(config, "CAMERA_OFFSET_RIGHT_M"):
+        right = float(config.CAMERA_OFFSET_RIGHT_M)
+    else:
+        # Legacy y is +left, so right is -left.
+        right = -float(getattr(config, "CAMERA_OFFSET_Y_M", 0.0))
+
+    return forward, right
+
+
 def camera_to_rover_center(x_cam, y_cam, heading_deg):
     """
     Convert a camera reference point in world frame to rover center in world frame.
@@ -22,8 +46,7 @@ def camera_to_rover_center(x_cam, y_cam, heading_deg):
         return x_cam, y_cam
 
     th = math.radians(heading_deg)
-    forward = float(config.CAMERA_OFFSET_FORWARD_M)
-    right = float(config.CAMERA_OFFSET_RIGHT_M)
+    forward, right = _get_camera_offsets_forward_right()
 
     # Camera position = rover center + forward*F + right*R.
     # So rover center = camera position - that rotated offset.
