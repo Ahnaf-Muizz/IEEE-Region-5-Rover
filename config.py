@@ -46,8 +46,8 @@ USE_CAMERA_OFFSET_COMPENSATION = True
 
 # --- Match ---
 MATCH_DURATION = 180.0  # Game Manual: 3 minutes
-# Start LED fallback: if bright-start signal is not detected in time, continue after this delay.
-START_LIGHT_FALLBACK_ENABLED = True
+# Strict start-light mode: mission must wait until bright start LED is detected.
+START_LIGHT_FALLBACK_ENABLED = False
 START_LIGHT_FALLBACK_SECONDS = 10.0
 
 # --- Odometry: encoder differential drive (no IMU) ---
