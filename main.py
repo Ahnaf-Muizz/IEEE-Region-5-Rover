@@ -58,12 +58,17 @@ def run_full_mission():
 
     try:
         match_start_time = time.time()
+        match_end_time = match_start_time + float(config.MATCH_DURATION)
         encoder_state.reset_baseline()
 
         print("Initial pose:")
         pose.print_pose()
 
         print("Leaving start area (reversed direction)...")
+        if time.time() >= match_end_time:
+            print("Hard match timeout reached before departure.")
+            drive_control.stop()
+            return
         if config.ODOMETRY_MODE == "encoder":
             pose.drive_distance_signed(config.LEAVE_START_DISTANCE_M)
         else:
@@ -75,6 +80,10 @@ def run_full_mission():
             try_localize_from_wall_tags(frame)
 
         while beacon_id is None:
+            if time.time() >= match_end_time:
+                print("Hard match timeout reached.")
+                drive_control.stop()
+                return
             if match_time_expired(match_start_time):
                 print("Match time expired during telemetry search.")
                 drive_control.stop()
@@ -119,6 +128,10 @@ def run_full_mission():
 
         material_found = False
         while not material_found:
+            if time.time() >= match_end_time:
+                print("Hard match timeout reached.")
+                drive_control.stop()
+                return
             if match_time_expired(match_start_time):
                 print("Match time expired during material search.")
                 drive_control.stop()
@@ -164,6 +177,11 @@ def run_full_mission():
             print("Arrived at dropoff point (Tag 6).")
         else:
             print("Failed to reach dropoff point (Tag 6).")
+
+        if time.time() >= match_end_time:
+            print("Hard match timeout reached.")
+            drive_control.stop()
+            return
 
     except KeyboardInterrupt:
         print("Stopped by user.")
