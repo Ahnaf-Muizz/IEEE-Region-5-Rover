@@ -51,7 +51,9 @@ Official docs: **Game Manual 1 & 2** (IEEE Region 5), **Field Assembly Guide**.
 | `camera_navigation.py` | Telemetry search, `drive_toward_coordinate`, material search/approach, optional wall-tag snap. |
 | `main.py` | CLI modes + full mission orchestration. |
 
-**Motor naming quirk:** In `drive_control.py`, semantic **forward** calls `motor.reverse()` and **backward** calls `motor.forward()` — this matches the original wiring convention; fix there if your driver is opposite.
+**Motor mapping:** `drive_control.py` now uses direct semantic mapping
+(`forward`→`motor.forward`, `backward`→`motor.reverse`,
+`left`→`motor.turn_left`, `right`→`motor.turn_right`).
 
 ---
 

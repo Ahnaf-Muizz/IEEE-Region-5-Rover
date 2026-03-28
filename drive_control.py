@@ -23,19 +23,19 @@ def safe_motor_call(label, fn, *args, **kwargs):
 
 
 def forward(speed=config.FORWARD_SPEED):
-    safe_motor_call("forward", motor.reverse, speed)
+    safe_motor_call("forward", motor.forward, speed)
 
 
 def backward(speed=config.BACKUP_SPEED):
-    safe_motor_call("reverse", motor.forward, speed)
+    safe_motor_call("reverse", motor.reverse, speed)
 
 
 def left(speed=config.TURN_SPEED):
-    safe_motor_call("turn_left", motor.turn_right, speed)
+    safe_motor_call("turn_left", motor.turn_left, speed)
 
 
 def right(speed=config.TURN_SPEED):
-    safe_motor_call("turn_right", motor.turn_left, speed)
+    safe_motor_call("turn_right", motor.turn_right, speed)
 
 
 def stop():
