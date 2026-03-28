@@ -60,11 +60,8 @@ Official docs: **Game Manual 1 & 2** (IEEE Region 5), **Field Assembly Guide**.
 (BCM pin numbering). If a side spins opposite, set `L298N_LEFT_INVERT` or
 `L298N_RIGHT_INVERT` to `True`.
 
-**Material color-order fallback:** if purple detection seems weak/gray with your camera pipeline,
-set `MATERIAL_COLOR_ORDER` in `config.py`:
-- `"auto"` (default): try BGR first, then RGB fallback for mask area
-- `"bgr"`: force BGR→HSV
-- `"rgb"`: force RGB→HSV
+**Material color-order:** this stack now uses your known-good behavior by default:
+`MATERIAL_COLOR_ORDER = "rgb"` in `config.py` (RGB->HSV for purple mask).
 
 ---
 

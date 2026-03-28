@@ -20,20 +20,9 @@ def _mask_purple(hsv_frame):
 
 
 def get_best_purple_material(frame_bgr):
-    # Most OpenCV camera paths are BGR; some Pi camera paths may already be RGB.
-    # Allow auto fallback to keep purple segmentation robust across both.
-    order = str(getattr(config, "MATERIAL_COLOR_ORDER", "auto")).lower()
-    hsv_bgr = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
-    mask_bgr = _mask_purple(hsv_bgr)
-    mask = mask_bgr
-    if order == "rgb":
-        hsv_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_RGB2HSV)
-        mask = _mask_purple(hsv_rgb)
-    elif order == "auto":
-        hsv_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_RGB2HSV)
-        mask_rgb = _mask_purple(hsv_rgb)
-        if int(np.count_nonzero(mask_rgb)) > int(np.count_nonzero(mask_bgr)):
-            mask = mask_rgb
+    # Force RGB->HSV path to match known-good field behavior.
+    hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_RGB2HSV)
+    mask = _mask_purple(hsv)
 
     if config.SHOW_DEBUG_MASK:
         cv2.imshow("Purple Mask", mask)
