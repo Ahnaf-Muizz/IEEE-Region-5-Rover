@@ -185,11 +185,6 @@ def main():
         help='Camera backend override: "usb" or "picamera2".',
     )
     parser.add_argument("--show", action="store_true", help="Enable OpenCV debug windows.")
-    parser.add_argument(
-        "--show",
-        action="store_true",
-        help="Enable OpenCV debug windows.",
-    )
     args = parser.parse_args()
 
     if args.backend in ("usb", "picamera2"):
