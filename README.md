@@ -1,6 +1,6 @@
 # Mining Mayhem — Rover navigation (IEEE Region 5)
 
-This repository holds **autonomous navigation** code for the **Mining Mayhem** game: camera, AprilTags, purple “Astral Material” detection, **encoder-based odometry** on a known field map, and a mission script. **Arm / servo pickup** and **CSC manipulation** are left as integration hooks in `main.py` (comments say where to add them).
+This repository holds **autonomous navigation** code for the **Mining Mayhem** game: camera, AprilTags, purple “Astral Material” detection, map-aware navigation with **time-based odometry** (or encoder odometry if external encoders are added), and a mission script. **Arm / servo pickup** and **CSC manipulation** are left as integration hooks in `main.py` (comments say where to add them).
 
 Use this README when continuing on a **Raspberry Pi 5** (e.g. edit in Firefox via [code-server](https://github.com/coder/code-server) or another web IDE, or SSH + editor). **Cursor chat history does not transfer**; everything important should live here and in `config.py`.
 
@@ -13,8 +13,8 @@ Use this README when continuing on a **Raspberry Pi 5** (e.g. edit in Firefox vi
 | **Computer** | Raspberry Pi 5 |
 | **Camera** | Arducam 1080P day/night USB (USB2.0). **Not** the Pi CSI module unless you switch `CAMERA_BACKEND` in `config.py`. |
 | **Camera placement** | Offset **to the right** of the robot centerline so the claw does not block the view. Steering uses `CAMERA_STEERING_OFFSET_PX` in `config.py` (tune on the field). |
-| **Drive** | Tank / differential chassis. **4-channel encoder motor driver** with onboard regulation (“intelligent small car” style). **No IMU.** |
-| **Odometry** | Wheel encoders only (`motor_control.read_wheel_ticks()`). Tune `TRACK_WIDTH_M`, `WHEEL_DIAMETER_M`, `ENCODER_TICKS_PER_REV`, and sign bits in `config.py`. |
+| **Drive** | Tank / differential chassis via **L298N dual H-bridge** on Raspberry Pi GPIO. **No IMU.** |
+| **Odometry** | With plain L298N (no encoder feedback), use **time-based** odometry (`ODOMETRY_MODE = "time"`). If you later add encoder hardware, switch back to encoder mode and tune related constants. |
 | **Manipulator** | Arm + wrist + claw; **3× MG995-class servos** (user part number may read MG99R). **Not wired in this repo** — you will merge your servo code later. |
 | **Sensors intentionally not used** | No ultrasonic, no magnetometer (Geodinium is magnetic; Nebulite is not — vision uses **purple color** only). |
 
@@ -45,13 +45,19 @@ Official docs: **Game Manual 1 & 2** (IEEE Region 5), **Field Assembly Guide**.
 | `start_light.py` | Start LED wait. |
 | `encoder_state.py` | Encoder tick deltas between reads. |
 | `odometry.py` | Differential-drive integration (meters per tick, track width). |
-| `motor_control.py` | **Replace stub** with your driver; must implement `read_wheel_ticks()` for encoder mode. |
+| `motor_control.py` | L298N GPIO backend (`RPi.GPIO`), with the same high-level motor API expected by navigation code. |
 | `drive_control.py` | Semantic `forward`/`backward`/`left`/`right`/`stop` (maps to your motor API naming). |
 | `pose.py` | Field pose `(x, y)` + heading; `drive_distance_signed`, `rotate_to_heading`, etc. |
 | `camera_navigation.py` | Telemetry search, `drive_toward_coordinate`, material search/approach, optional wall-tag snap. |
 | `main.py` | CLI modes + full mission orchestration. |
 
-**Motor naming quirk:** In `drive_control.py`, semantic **forward** calls `motor.reverse()` and **backward** calls `motor.forward()` — this matches the original wiring convention; fix there if your driver is opposite.
+**Motor mapping:** `drive_control.py` uses direct semantic mapping
+(`forward`→`motor.forward`, `backward`→`motor.reverse`,
+`left`→`motor.turn_left`, `right`→`motor.turn_right`).
+
+**L298N pin config:** edit `L298N_*` settings in `config.py` to match your wiring
+(BCM pin numbering). If a side spins opposite, set `L298N_LEFT_INVERT` or
+`L298N_RIGHT_INVERT` to `True`.
 
 ---
 
@@ -93,7 +99,7 @@ python main.py --mode camera --show
 python main.py --mode tags --show
 python main.py --mode material --show
 python main.py --mode start_light
-python main.py --mode odometry          # no camera; short encoder distance test
+python main.py --mode odometry          # no camera; short drive/pose test
 
 # Per-module tests (see docstring in main.py for full list)
 python camera_io.py
@@ -123,12 +129,12 @@ Motion commands that can move the robot require **`--yes`** where documented.
 
 ## Checklist before competition
 
-- [ ] Replace `motor_control.py` stub: PWM commands + **`read_wheel_ticks()`** (left/right cumulative; forward increases both if wired consistently).
-- [ ] Calibrate **`ENCODER_*`**, **`TRACK_WIDTH_M`**, **`WHEEL_DIAMETER_M`** (`python main.py --mode odometry` + tape measure).
+- [ ] Wire L298N pins to match `L298N_*` in `config.py` and verify motion directions.
+- [ ] Calibrate **`METERS_PER_SECOND`** and **`DEGREES_PER_SECOND`** for time-based navigation (`python main.py --mode odometry` + tape measure).
 - [ ] Fill **`FIELD`** in `config.py` from your taped / CAD field (and verify start heading when snapping to mast after telemetry).
 - [ ] Tune **`CAMERA_STEERING_OFFSET_PX`** and **`PURPLE_*`** HSV with venue lighting.
 - [ ] Install **`pupil-apriltags`** (or `apriltag`) on the Pi and verify `python april_tags.py`.
-- [ ] Decide **`USE_WALL_TAG_POSE_CORRECTION`**: `False` = encoder + map only; `True` = correct drift when wall tags visible.
+- [ ] Decide **`USE_WALL_TAG_POSE_CORRECTION`**: `False` = dead-reckoning + map only; `True` = correct drift when wall tags visible.
 - [ ] Integrate arm/CSC actions at the handoff comments in `main.py`.
 
 ---

@@ -1,4 +1,5 @@
 opencv-python>=4.8
 numpy>=1.24
+RPi.GPIO>=0.7.1
 # On Raspberry Pi (ARM), prefer: pip install pupil-apriltags
 # pupil-apriltags may need build tools; alternative: pip install apriltag

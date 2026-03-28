@@ -27,7 +27,8 @@ MATCH_DURATION = 180.0  # Game Manual: 3 minutes
 
 # --- Odometry: encoder differential drive (no IMU) ---
 # "encoder" = distance/heading moves use wheel ticks; "time" = legacy seconds × rates.
-ODOMETRY_MODE = "encoder"
+# L298N has no encoder interface by itself, so default to time mode.
+ODOMETRY_MODE = "time"
 
 # Distance between left and right wheel contact patches (meters). Measure carefully.
 TRACK_WIDTH_M = 0.16
@@ -49,7 +50,7 @@ ENCODER_STALL_TIME_S = 0.35
 FIELD_INNER_WIDTH_M = 1.22
 FIELD_INNER_LENGTH_M = 2.44
 
-# Vision snaps pose to wall tags — off = pure coordinate + encoder (recommended for tuning FIELD first).
+# Vision snaps pose to wall tags — off = pure coordinate + odometry only.
 USE_WALL_TAG_POSE_CORRECTION = False
 
 # --- Navigation timing / fallback when ODOMETRY_MODE == "time" or encoder stall fallback ---
@@ -104,6 +105,20 @@ FORWARD_SPEED = 100
 TURN_SPEED = 90
 APPROACH_SPEED = 90
 BACKUP_SPEED = 90
+
+# --- L298N GPIO backend (BCM numbering) ---
+# Adjust pinout to your wiring on Raspberry Pi.
+L298N_LEFT_IN1 = 17
+L298N_LEFT_IN2 = 27
+L298N_LEFT_EN = 18
+L298N_RIGHT_IN1 = 23
+L298N_RIGHT_IN2 = 24
+L298N_RIGHT_EN = 13
+L298N_PWM_FREQUENCY_HZ = 1000
+L298N_USE_PWM = True
+# Set True if either motor side spins opposite your expected direction.
+L298N_LEFT_INVERT = False
+L298N_RIGHT_INVERT = False
 
 
 def steering_center_x():
