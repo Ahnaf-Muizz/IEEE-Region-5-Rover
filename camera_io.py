@@ -12,6 +12,7 @@ import config
 
 _cap = None
 _picam2 = None
+_warned_picam_gray = False
 
 
 def open_camera():
@@ -22,9 +23,24 @@ def open_camera():
 
         _picam2 = Picamera2()
         cam_cfg = _picam2.create_preview_configuration(
-            main={"size": (config.FRAME_WIDTH, config.FRAME_HEIGHT)}
+            main={
+                "size": (config.FRAME_WIDTH, config.FRAME_HEIGHT),
+                "format": config.PICAMERA2_MAIN_FORMAT,
+            }
         )
         _picam2.configure(cam_cfg)
+        try:
+            _picam2.set_controls(
+                {
+                    "AeEnable": bool(config.PICAMERA2_AE_ENABLE),
+                    "AwbEnable": bool(config.PICAMERA2_AWB_ENABLE),
+                    "Saturation": float(config.PICAMERA2_SATURATION),
+                    "Contrast": float(config.PICAMERA2_CONTRAST),
+                }
+            )
+        except Exception:
+            # Some camera drivers/versions may not expose all controls.
+            pass
         _picam2.start()
         time.sleep(1.0)
         return
@@ -56,17 +72,31 @@ def open_camera():
 
 def read_bgr():
     """Return BGR frame or None if capture failed."""
-    global _cap, _picam2
+    global _cap, _picam2, _warned_picam_gray
 
     if config.CAMERA_BACKEND == "picamera2":
         if _picam2 is None:
             return None
-        rgb = _picam2.capture_array()
-        if rgb is None:
+        frame = _picam2.capture_array()
+        if frame is None:
             return None
-        if rgb.ndim == 2:
-            return cv2.cvtColor(rgb, cv2.COLOR_GRAY2BGR)
-        return cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+        if frame.ndim == 2:
+            # If we ever get luma-only output, this indicates camera format/control mismatch.
+            # Try YUV420 decode first, else keep compatibility with grayscale->BGR.
+            if frame.shape[0] == (config.FRAME_HEIGHT * 3) // 2:
+                return cv2.cvtColor(frame, cv2.COLOR_YUV2BGR_I420)
+            if not _warned_picam_gray:
+                print(
+                    "[camera_io] warning: Picamera frame is grayscale; "
+                    "check PICAMERA2_MAIN_FORMAT and camera controls in config.py"
+                )
+                _warned_picam_gray = True
+            return cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+        if frame.ndim == 3 and frame.shape[2] == 4:
+            return cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
+        if frame.ndim == 3 and frame.shape[2] == 3:
+            return cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        return None
 
     if _cap is None:
         return None

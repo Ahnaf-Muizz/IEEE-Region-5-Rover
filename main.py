@@ -36,7 +36,7 @@ import drive_control
 import encoder_state
 import pose
 import start_light
-from camera_geometry import camera_to_robot_center
+from camera_geometry import camera_world_to_rover_center
 from camera_navigation import (
     approach_astral_material,
     go_to_material_search_zone,
@@ -101,7 +101,7 @@ def run_full_mission():
 
         print("Telemetry target pad =", telemetry_id)
 
-        pose.robot_x, pose.robot_y = camera_to_robot_center(
+        pose.robot_x, pose.robot_y = camera_world_to_rover_center(
             config.FIELD["mast"][0], config.FIELD["mast"][1], 180.0
         )
         pose.robot_heading = 180.0

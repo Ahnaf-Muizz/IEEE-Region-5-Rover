@@ -94,7 +94,7 @@ def correct_pose_from_wall_tag(tag):
     half_w = config.FRAME_WIDTH / 2.0
     pose.robot_heading += (error / half_w) * 12.0
     pose.normalize_heading()
-    pose.robot_x, pose.robot_y = camera_geometry.camera_to_rover_center(
+    pose.robot_x, pose.robot_y = camera_geometry.camera_world_to_rover_center(
         cam_x, cam_y, pose.robot_heading
     )
 

@@ -10,6 +10,13 @@ import numpy as np
 CAMERA_INDEX = 0
 # "usb" = OpenCV VideoCapture (Arducam USB). "picamera2" = Pi Camera Module only.
 CAMERA_BACKEND = "usb"
+# Prefer explicit color format for Picamera2 to avoid luma-only/grayscale frames.
+PICAMERA2_MAIN_FORMAT = "RGB888"
+# Keep auto exposure / white-balance on unless you intentionally tune manual controls.
+PICAMERA2_AE_ENABLE = True
+PICAMERA2_AWB_ENABLE = True
+PICAMERA2_SATURATION = 1.1
+PICAMERA2_CONTRAST = 1.0
 
 # If the lens is to the RIGHT of the robot centerline (forward view), rocks on the
 # centerline appear LEFT of the image center. Use a NEGATIVE offset (pixels) to move
@@ -24,13 +31,13 @@ SHOW_DEBUG_MASK = False
 # Match proven pipeline: interpret frames as RGB for purple HSV conversion.
 MATERIAL_COLOR_ORDER = "rgb"  # options: "rgb", "bgr"
 # Camera mounting offset from rover center (meters).
-# Measured values from user:
-#   x-axis: 71.31 mm, y-axis: 50.19 mm
-# Mapped here as:
-#   CAMERA_OFFSET_FORWARD_M = +y (forward from rover center)
-#   CAMERA_OFFSET_RIGHT_M   = +x (to the right of rover center)
-CAMERA_OFFSET_FORWARD_M = 0.05019
-CAMERA_OFFSET_RIGHT_M = 0.07131
+# Coordinate convention:
+#   +x = forward, +y = left
+# User measurement:
+#   x-axis offset = 71.31 mm  -> forward
+#   y-axis offset = 50.19 mm  -> right (so left is negative)
+CAMERA_OFFSET_X_M = 0.07131
+CAMERA_OFFSET_Y_M = -0.05019
 USE_CAMERA_OFFSET_COMPENSATION = True
 
 # --- Match ---
