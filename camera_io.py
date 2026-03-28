@@ -81,13 +81,13 @@ def read_bgr():
         if frame is None:
             return None
         if frame.ndim == 3 and frame.shape[2] == 3:
-            # In low light, some pipelines can return effectively monochrome RGB frames
-            # even when format is RGB888. Treat that as grayscale only when near pitch-dark.
+            # Keep color in normal lighting. Only collapse to grayscale in extreme darkness.
             try:
                 if bool(getattr(config, "PICAMERA2_FORCE_GRAY_DARK_ONLY", True)):
                     gray_probe = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
-                    dark_thr = int(getattr(config, "PICAMERA2_GRAY_DARKNESS_THRESHOLD", 12))
-                    if float(gray_probe.mean()) <= max(0, min(255, dark_thr)):
+                    dark_thr = float(getattr(config, "GRAYSCALE_DARK_THRESHOLD", 3.0))
+                    dark_thr = max(0.0, min(255.0, dark_thr))
+                    if float(gray_probe.mean()) <= dark_thr:
                         return cv2.cvtColor(gray_probe, cv2.COLOR_GRAY2BGR)
             except Exception:
                 pass

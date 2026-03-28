@@ -17,9 +17,10 @@ PICAMERA2_AE_ENABLE = True
 PICAMERA2_AWB_ENABLE = True
 PICAMERA2_SATURATION = 1.1
 PICAMERA2_CONTRAST = 1.0
-# Only allow grayscale frames when scene brightness is almost pitch dark.
+# Only allow grayscale/low-light fallback when the scene is almost pitch dark.
 # OpenCV grayscale brightness scale is 0..255.
-GRAYSCALE_DARK_THRESHOLD = 6.0
+PICAMERA2_FORCE_GRAY_DARK_ONLY = True
+PICAMERA2_GRAY_DARKNESS_THRESHOLD = 3.0
 
 # If the lens is to the RIGHT of the robot centerline (forward view), rocks on the
 # centerline appear LEFT of the image center. Use a NEGATIVE offset (pixels) to move
@@ -104,6 +105,7 @@ MATERIAL_MIN_CIRCULARITY = 0.45
 MATERIAL_MIN_SOLIDITY = 0.70
 MATERIAL_CLOSE_AREA = 12000
 MATERIAL_CENTER_TOLERANCE = 60
+MATERIAL_FORWARD_STEP = 0.35
 
 # --- Field frame (meters). Heading: 0=E, 90=N, 180=W, 270=S
 # VERIFY against Game Manual 2 figures and your taped field; ±1 in per rules.
