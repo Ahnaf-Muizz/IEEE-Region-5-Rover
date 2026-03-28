@@ -34,6 +34,7 @@ import camera_io
 import config
 import drive_control
 import encoder_state
+import manipulator
 import pose
 import start_light
 from camera_geometry import camera_world_to_rover_center
@@ -57,6 +58,7 @@ def run_full_mission():
     start_light.wait_for_start_light()
 
     try:
+        manipulator.initialize()
         match_start_time = time.time()
         encoder_state.reset_baseline()
 
@@ -131,7 +133,9 @@ def run_full_mission():
 
                 if approach_result == "reached":
                     material_found = True
-                    print("Astral Material objective reached. (Hook arm pickup here.)")
+                    print("Astral Material objective reached. Running pickup sequence...")
+                    if not manipulator.pickup_rock():
+                        print("Pickup sequence failed or disabled.")
 
                 elif approach_result == "obstacle":
                     last_turn_right = not last_turn_right
@@ -161,7 +165,9 @@ def run_full_mission():
 
         drop_result = go_to_dropoff_tag6(match_start_time)
         if drop_result == "reached":
-            print("Arrived at dropoff point (Tag 6). (Hook CSC dropoff here.)")
+            print("Arrived at dropoff point (Tag 6). Running dropoff sequence...")
+            if not manipulator.drop_into_container():
+                print("Dropoff sequence failed or disabled.")
         else:
             print("Failed to reach dropoff point (Tag 6).")
 
@@ -169,6 +175,7 @@ def run_full_mission():
         print("Stopped by user.")
     finally:
         drive_control.stop()
+        manipulator.shutdown()
 
 
 def main():
@@ -185,12 +192,19 @@ def main():
         help='Camera backend override: "usb" or "picamera2".',
     )
     parser.add_argument("--show", action="store_true", help="Enable OpenCV debug windows.")
+    parser.add_argument(
+        "--no-servo",
+        action="store_true",
+        help="Disable servo manipulator actions (pickup/dropoff) for dry runs.",
+    )
     args = parser.parse_args()
 
     if args.backend in ("usb", "picamera2"):
         config.CAMERA_BACKEND = "picamera2" if args.backend == "picamera2" else "usb"
     if args.show:
         config.SHOW_CAMERA = True
+    if args.no_servo:
+        config.MANIPULATOR_ENABLED = False
 
     needs_camera = args.mode != "odometry"
     if needs_camera:

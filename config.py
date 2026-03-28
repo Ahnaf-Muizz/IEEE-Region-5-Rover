@@ -152,6 +152,39 @@ TURN_SPEED = 90
 APPROACH_SPEED = 90
 BACKUP_SPEED = 90
 
+# --- Rock manipulator (3-servo arm/wrist/claw) ---
+# Set False to disable servo output and run mission without manipulator moves.
+MANIPULATOR_ENABLED = True
+# Optional: force simulation logs even if gpiozero/pigpio are installed.
+MANIPULATOR_SIMULATE = False
+
+# Servo backend + pins (BCM)
+SERVO_BASE_PIN = 5
+SERVO_WRIST_PIN = 6
+SERVO_CLAW_PIN = 19
+SERVO_MIN_PULSE_S = 0.0005
+SERVO_MAX_PULSE_S = 0.0025
+
+# Common delays
+SERVO_MOVE_DELAY_S = 0.35
+SERVO_PICKUP_SETTLE_S = 0.35
+SERVO_GRAB_DELAY_S = 0.35
+SERVO_DROP_SETTLE_S = 0.35
+SERVO_RELEASE_DELAY_S = 0.35
+
+# Angles for base/wrist/claw in degrees (-90..90 for AngularServo)
+SERVO_BASE_HOME_DEG = 0.0
+SERVO_BASE_PICKUP_DEG = 0.0
+SERVO_BASE_DROPOFF_DEG = 45.0
+
+SERVO_WRIST_HOME_DEG = 0.0
+SERVO_WRIST_DOWN_DEG = 40.0
+SERVO_WRIST_LIFT_DEG = -20.0
+SERVO_WRIST_DROPOFF_DEG = 10.0
+
+SERVO_CLAW_OPEN_DEG = 30.0
+SERVO_CLAW_CLOSED_DEG = -20.0
+
 # --- L298N GPIO backend (BCM numbering) ---
 # Adjust pinout to your wiring on Raspberry Pi.
 L298N_LEFT_IN1 = 17
